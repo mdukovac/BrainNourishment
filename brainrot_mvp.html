@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrainRot Learning — MVP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --purple: #7F77DD;
+    --purple-light: #EEEDFE;
+    --purple-dark: #3C3489;
+    --teal: #1D9E75;
+    --teal-light: #E1F5EE;
+    --amber: #EF9F27;
+    --amber-light: #FAEEDA;
+    --bg: #F5F4F0;
+    --card: #FFFFFF;
+    --text: #1a1a18;
+    --text-2: #5a5a56;
+    --text-3: #9a9a94;
+    --border: rgba(0,0,0,0.08);
+    --border-2: rgba(0,0,0,0.14);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  h1, h2, h3 { font-family: 'Syne', sans-serif; }
+
+  /* ── Header ── */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto 28px;
+  }
+  .app-logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .app-logo span { color: var(--purple); }
+  .token-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--card); border: 1px solid var(--border-2);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 500;
+  }
+  .token-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+
+  /* ── Nav tabs ── */
+  .nav-tabs {
+    display: flex; gap: 6px;
+    max-width: 900px; margin: 0 auto 24px;
+    background: var(--card); border-radius: 14px; padding: 6px; border: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1; padding: 9px 10px; border: none; background: transparent;
+    border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-2);
+    cursor: pointer; transition: all .18s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab-btn.active { background: var(--purple); color: #fff; }
+  .tab-btn .tab-num {
+    width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,.25);
+    font-size: 11px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tab-btn:not(.active) .tab-num { background: var(--border); color: var(--text-3); }
+
+  /* ── Screens ── */
+  .screen { display: none; max-width: 900px; margin: 0 auto; animation: fadeIn .2s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px 24px; margin-bottom: 16px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--text-2); margin-bottom: 16px; }
+
+  /* ── Upload zones ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border-2); border-radius: var(--radius-sm);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    transition: border-color .18s, background .18s; position: relative;
+    background: #fafaf8;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--purple); background: var(--purple-light); }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-label { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; color: var(--text-3); }
+  .upload-preview { display: none; align-items: center; gap: 12px; padding: 12px 14px; background: var(--teal-light); border-radius: var(--radius-sm); margin-top: 12px; }
+  .upload-preview.show { display: flex; }
+  .preview-icon { font-size: 22px; }
+  .preview-info { flex: 1; }
+  .preview-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .preview-size { font-size: 11px; color: var(--text-2); }
+  .preview-remove { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-2); padding: 4px; }
+
+  /* ── Asset grid (characters) ── */
+  .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+  .asset-slot {
+    aspect-ratio: 1; border-radius: var(--radius-sm); border: 1.5px dashed var(--border-2);
+    position: relative; cursor: pointer; overflow: hidden; background: #fafaf8;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: border-color .18s, background .18s;
+  }
+  .asset-slot:hover { border-color: var(--purple); background: var(--purple-light); }
+  .asset-slot input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .asset-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+  .asset-slot .slot-label { font-size: 11px; color: var(--text-3); margin-top: 6px; text-align: center; position: relative; z-index: 1; }
+  .asset-slot .slot-plus { font-size: 24px; color: var(--text-3); position: relative; z-index: 1; }
+  .asset-slot .slot-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.45); display: none;
+    align-items: center; justify-content: center; border-radius: 8px; z-index: 2;
+  }
+  .asset-slot:hover .slot-overlay.has-img { display: flex; }
+  .asset-slot .slot-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 10px; padding: 4px 6px;
+    text-align: center; z-index: 3; border-radius: 0 0 8px 8px;
+  }
+
+  /* ── Footage grid ── */
+  .footage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .footage-slot {
+    border-radius: var(--radius-sm); border: 1.5px dashed var(--border-2);
+    position: relative; cursor: pointer; overflow: hidden; background: #fafaf8;
+    aspect-ratio: 9/16; max-height: 220px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: border-color .18s, background .18s;
+  }
+  .footage-slot:hover { border-color: var(--purple); background: var(--purple-light); }
+  .footage-slot input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .footage-slot video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+  .footage-slot .slot-label { font-size: 11px; color: var(--text-3); margin-top: 8px; text-align: center; position: relative; z-index: 1; }
+  .footage-slot .slot-plus { font-size: 28px; color: var(--text-3); position: relative; z-index: 1; }
+  .footage-selected-badge {
+    position: absolute; top: 6px; right: 6px; background: var(--purple); color: #fff;
+    border-radius: 20px; font-size: 10px; padding: 2px 8px; z-index: 4; font-weight: 600;
+  }
+  .footage-slot .slot-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 6px 8px;
+    text-align: center; z-index: 3; border-radius: 0 0 8px 8px; font-weight: 500;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    background: var(--purple); color: #fff; border: none; border-radius: 12px;
+    padding: 13px 24px; font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: opacity .15s, transform .1s; width: 100%;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-secondary {
+    background: var(--card); color: var(--text); border: 1px solid var(--border-2);
+    border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: background .15s;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text-3); margin-bottom: 10px;
+  }
+
+  /* ── Phone mockup ── */
+  .phone-outer {
+    width: 260px; margin: 0 auto;
+    background: #1a1a18; border-radius: 36px; padding: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  }
+  .phone-screen {
+    background: #fff; border-radius: 26px; overflow: hidden;
+    aspect-ratio: 9/19.5; position: relative;
+  }
+  .phone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 22px; background: #1a1a18; border-radius: 0 0 14px 14px; z-index: 10;
+  }
+
+  /* ── Video preview screen ── */
+  .video-bg {
+    position: absolute; inset: 0; background: linear-gradient(180deg, #87CEEB 0%, #87CEEB 55%, #228B22 55%, #228B22 72%, #8B4513 72%);
+  }
+  .caption-overlay {
+    position: absolute; bottom: 60px; left: 0; right: 0;
+    text-align: center; padding: 0 14px;
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800;
+    color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.8); line-height: 1.4;
+  }
+  .caption-highlight { color: #FFE629; }
+
+  /* ── Voice/bg selector ── */
+  .voice-row { display: flex; gap: 12px; }
+  .voice-chip {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 12px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .voice-chip.active { border-color: var(--purple); background: var(--purple-light); }
+  .voice-emoji { font-size: 28px; }
+  .voice-name { font-size: 11px; font-weight: 500; color: var(--text-2); }
+  .bg-row { display: flex; gap: 10px; }
+  .bg-chip {
+    flex: 1; border-radius: var(--radius-sm); overflow: hidden;
+    border: 1.5px solid var(--border); cursor: pointer; transition: border-color .15s;
+  }
+  .bg-chip.active { border-color: var(--purple); }
+  .bg-thumb { height: 52px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .bg-chip-label { padding: 6px 8px; font-size: 11px; font-weight: 500; text-align: center; background: var(--bg); color: var(--text-2); }
+
+  /* ── Progress steps ── */
+  .step-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; }
+  .step-line-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .step-dot-lg { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .step-line { width: 1.5px; flex: 1; background: var(--border-2); min-height: 20px; }
+  .step-done-dot { background: var(--teal); }
+  .step-active-dot { background: var(--purple); }
+  .step-wait-dot { background: var(--border-2); }
+  .step-text { font-size: 13px; font-weight: 500; color: var(--text); }
+  .step-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+  /* ── Layout helpers ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .nav-tabs { flex-wrap: wrap; }
+    .tab-btn { flex: 1 1 40%; }
+  }
+  .gap-row { display: flex; gap: 10px; }
+  .mt { margin-top: 14px; }
+
+  /* ── Textarea / inputs ── */
+  textarea {
+    width: 100%; font-family: inherit; font-size: 13px; resize: vertical;
+    border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 12px 14px;
+    background: #fafaf8; color: var(--text); outline: none; transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--purple); }
+
+  /* ── Tags ── */
+  .tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; margin: 3px; }
+  .tag-p { background: var(--purple-light); color: var(--purple-dark); }
+  .tag-t { background: var(--teal-light); color: #085041; }
+  .tag-a { background: var(--amber-light); color: #633806; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-logo">Brain<span>Rot</span> 🧠</div>
+  <div class="token-badge"><div class="token-dot"></div> 5 free generations left</div>
+</div>
+
+<!-- Nav tabs -->
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab(0)" id="tab0">
+    <span class="tab-num">1</span> Upload
+  </button>
+  <button class="tab-btn" onclick="showTab(1)" id="tab1">
+    <span class="tab-num">2</span> Assets
+  </button>
+  <button class="tab-btn" onclick="showTab(2)" id="tab2">
+    <span class="tab-num">3</span> Customize
+  </button>
+  <button class="tab-btn" onclick="showTab(3)" id="tab3">
+    <span class="tab-num">4</span> Preview
+  </button>
+</div>
+
+<!-- ───────────────── SCREEN 1: UPLOAD ───────────────── -->
+<div class="screen active" id="screen0">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">Upload study material</div>
+        <div class="card-sub">Drop a PDF, DOCX, or paste your notes below</div>
+        <div class="upload-zone" id="pdf-zone">
+          <input type="file" accept=".pdf,.docx,.txt" onchange="handleFile(this,'pdf-preview','pdf-zone')">
+          <div class="upload-icon">📄</div>
+          <div class="upload-label">Drop file here or click to browse</div>
+          <div class="upload-hint">PDF, DOCX, TXT — up to 20 MB</div>
+        </div>
+        <div class="upload-preview" id="pdf-preview">
+          <div class="preview-icon">📄</div>
+          <div class="preview-info">
+            <div class="preview-name" id="pdf-name">—</div>
+            <div class="preview-size" id="pdf-size">—</div>
+          </div>
+          <button class="preview-remove" onclick="removeFile('pdf-preview','pdf-name','pdf-size')">✕</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Or paste raw notes</div>
+        <div class="card-sub">Works with any plain text, bullet points, or copied content</div>
+        <textarea rows="6" placeholder="e.g. The Mitochondria is the powerhouse of the cell. It generates adenosine triphosphate (ATP)..."></textarea>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Recent generations</div>
+        <div class="card-sub">Tap to reload a previous session</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);cursor:pointer;">
+            <span style="font-size:20px;">⚡</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;">Mitochondria &amp; ATP</div>
+              <div style="font-size:11px;color:var(--text-3);">2 min ago · Peter · Minecraft</div>
+            </div>
+            <span class="tag tag-t" style="font-size:10px;">Done</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);cursor:pointer;">
+            <span style="font-size:20px;">🏰</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;">French Revolution</div>
+              <div style="font-size:11px;color:var(--text-3);">Yesterday · Peter · Subway</div>
+            </div>
+            <span class="tag tag-t" style="font-size:10px;">Done</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);cursor:pointer;">
+            <span style="font-size:20px;">📐</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:500;">Pythagorean Theorem</div>
+              <div style="font-size:11px;color:var(--text-3);">2 days ago · Brian · ASMR</div>
+            </div>
+            <span class="tag tag-p" style="font-size:10px;">Processing</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Popular topics</div>
+        <div>
+          <span class="tag tag-p">Cell biology</span>
+          <span class="tag tag-t">World War II</span>
+          <span class="tag tag-a">Calculus</span>
+          <span class="tag tag-p">Photosynthesis</span>
+          <span class="tag tag-t">Roman Empire</span>
+          <span class="tag tag-a">Newton's Laws</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="showTab(1)">Continue to assets →</button>
+</div>
+
+<!-- ───────────────── SCREEN 2: ASSETS ───────────────── -->
+<div class="screen" id="screen1">
+
+  <div class="card">
+    <div class="card-title">Character portraits</div>
+    <div class="card-sub">Upload PNG/JPG images for each narrator voice. These appear in the video as a talking-head avatar overlay.</div>
+    <div class="asset-grid" id="char-grid">
+      <!-- slots injected by JS -->
+    </div>
+    <button class="btn-secondary mt" onclick="addCharSlot()">+ Add character</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Background footage library</div>
+    <div class="card-sub">Upload vertical MP4 clips (9:16). Each clip will be randomly spliced behind the narration. Click a clip to select it as default.</div>
+    <div class="footage-grid" id="footage-grid">
+      <!-- slots injected by JS -->
+    </div>
+    <button class="btn-secondary mt" onclick="addFootageSlot()">+ Add footage clip</button>
+  </div>
+
+  <div class="gap-row mt">
+    <button class="btn-secondary" onclick="showTab(0)" style="flex:1;">← Back</button>
+    <button class="btn-primary" onclick="showTab(2)" style="flex:2;">Continue to customize →</button>
+  </div>
+</div>
+
+<!-- ───────────────── SCREEN 3: CUSTOMIZE ───────────────── -->
+<div class="screen" id="screen2">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">Narrator voice</div>
+        <div class="card-sub">Select which character explains the topic</div>
+        <div class="voice-row" id="voice-row">
+          <div class="voice-chip active" onclick="selectVoice(this)">
+            <div class="voice-emoji" id="char-emoji-0">🍺</div>
+            <div class="voice-name" id="char-name-0">Peter</div>
+          </div>
+          <div class="voice-chip" onclick="selectVoice(this)">
+            <div class="voice-emoji" id="char-emoji-1">🐢</div>
+            <div class="voice-name" id="char-name-1">Patrick</div>
+          </div>
+          <div class="voice-chip" onclick="selectVoice(this)">
+            <div class="voice-emoji" id="char-emoji-2">🤖</div>
+            <div class="voice-name" id="char-name-2">Brian</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Background footage</div>
+        <div class="card-sub">Choose from your uploaded clips</div>
+        <div class="bg-row">
+          <div class="bg-chip active" onclick="selectBg(this)">
+            <div class="bg-thumb" style="background:#1a1a2e;">⛏️</div>
+            <div class="bg-chip-label">Minecraft</div>
+          </div>
+          <div class="bg-chip" onclick="selectBg(this)">
+            <div class="bg-thumb" style="background:#1a2e1a;">🏃</div>
+            <div class="bg-chip-label">Subway</div>
+          </div>
+          <div class="bg-chip" onclick="selectBg(this)">
+            <div class="bg-thumb" style="background:#2e1a2e;">🧼</div>
+            <div class="bg-chip-label">ASMR</div>
+          </div>
+          <div class="bg-chip" onclick="selectBg(this)" id="bg-custom" style="display:none;">
+            <div class="bg-thumb" style="background:#2e2e1a;">🎬</div>
+            <div class="bg-chip-label" id="bg-custom-label">Custom</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Caption style</div>
+        <div class="card-sub">Choose how subtitles appear on the video</div>
+        <div style="display:flex;gap:8px;">
+          <div onclick="selectCaption(this)" data-style="yellow" style="flex:1;border-radius:8px;padding:10px 6px;text-align:center;background:#000;color:#FFE629;font-weight:700;font-size:13px;cursor:pointer;border:2px solid var(--purple);">Bold yellow</div>
+          <div onclick="selectCaption(this)" data-style="white" style="flex:1;border-radius:8px;padding:10px 6px;text-align:center;background:#000;color:#fff;font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;">White pop</div>
+          <div onclick="selectCaption(this)" data-style="red" style="flex:1;border-radius:8px;padding:10px 6px;text-align:center;background:#000;color:#FF6B6B;font-weight:700;font-size:13px;cursor:pointer;border:2px solid transparent;">Red heat</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Video length</div>
+        <div class="card-sub">Target duration in seconds</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div onclick="selectLen(this)" style="flex:1;min-width:60px;text-align:center;padding:10px;border-radius:10px;border:1.5px solid var(--purple);background:var(--purple-light);font-weight:600;font-size:14px;cursor:pointer;">30s</div>
+          <div onclick="selectLen(this)" style="flex:1;min-width:60px;text-align:center;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-weight:500;font-size:14px;cursor:pointer;">60s</div>
+          <div onclick="selectLen(this)" style="flex:1;min-width:60px;text-align:center;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-weight:500;font-size:14px;cursor:pointer;">90s</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Script preview</div>
+        <div class="card-sub">What the AI will generate (edit if needed)</div>
+        <textarea rows="7" id="script-preview">Hehehehe... okay Lois, picture this. Your body is like a giant brewery, right? And inside every single tiny room in this brewery, there's a little guy named the Mitochondria. This guy is an absolute animal — he works overtime making these little energy drinks called ATP. Without ATP I couldn't even stand up to go to the fridge. So yeah, Mitochondria... total freakin' powerhouse. Hehehehe.</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="gap-row mt">
+    <button class="btn-secondary" onclick="showTab(1)" style="flex:1;">← Back</button>
+    <button class="btn-primary" onclick="showTab(3)" style="flex:2;">✦ Generate video</button>
+  </div>
+</div>
+
+<!-- ───────────────── SCREEN 4: PREVIEW ───────────────── -->
+<div class="screen" id="screen3">
+  <div class="two-col">
+    <div>
+      <!-- Phone mockup -->
+      <div class="phone-outer">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="video-bg"></div>
+          <!-- Character avatar -->
+          <div style="position:absolute;bottom:130px;left:16px;width:52px;height:52px;border-radius:50%;background:#FFF3E0;border:2px solid rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;font-size:26px;z-index:5;">🍺</div>
+          <div class="caption-overlay">
+            <span style="background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;">okay Lois, picture</span><br>
+            <span class="caption-highlight" style="background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;">MITOCHONDRIA</span><br>
+            <span style="background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;">is the brewery guy</span>
+          </div>
+          <!-- Progress bar -->
+          <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.2);z-index:6;">
+            <div style="width:38%;height:100%;background:var(--purple);"></div>
+          </div>
+          <!-- Side actions -->
+          <div style="position:absolute;right:10px;bottom:90px;display:flex;flex-direction:column;gap:12px;align-items:center;z-index:6;">
+            <div style="text-align:center;">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;">❤️</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px;">Like</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;">💾</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px;">Save</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;">↺</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px;">Redo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">Generation progress</div>
+        <div style="padding:4px 0;">
+          <div class="step-row">
+            <div class="step-line-wrap">
+              <div class="step-dot-lg step-done-dot"></div>
+              <div class="step-line"></div>
+            </div>
+            <div>
+              <div class="step-text">Notes parsed ✓</div>
+              <div class="step-sub">3 pages processed</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-line-wrap">
+              <div class="step-dot-lg step-done-dot"></div>
+              <div class="step-line"></div>
+            </div>
+            <div>
+              <div class="step-text">Script generated ✓</div>
+              <div class="step-sub">Peter Griffin style · 62 words</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-line-wrap">
+              <div class="step-dot-lg step-active-dot"></div>
+              <div class="step-line"></div>
+            </div>
+            <div>
+              <div class="step-text">Synthesizing voice…</div>
+              <div class="step-sub">TTS rendering audio</div>
+            </div>
+          </div>
+          <div class="step-row" style="opacity:.4;">
+            <div class="step-line-wrap">
+              <div class="step-dot-lg step-wait-dot"></div>
+            </div>
+            <div>
+              <div class="step-text">Compositing video</div>
+              <div class="step-sub">Mixing audio + footage + captions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Export</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn-primary" onclick="showTab(0)">⬇ Download MP4</button>
+          <button class="btn-secondary" onclick="showTab(2)">↺ Regenerate script</button>
+          <button class="btn-secondary" onclick="showTab(0)">+ New video</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab navigation ──
+function showTab(i) {
+  document.querySelectorAll('.screen').forEach((s,j) => s.classList.toggle('active', j===i));
+  document.querySelectorAll('.tab-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+}
+
+// ── File upload helpers ──
+function handleFile(input, previewId, zoneId) {
+  const file = input.files[0];
+  if (!file) return;
+  const prev = document.getElementById(previewId);
+  document.getElementById(previewId.replace('preview','name') || previewId+'-name') && null;
+  prev.querySelector('.preview-name').textContent = file.name;
+  prev.querySelector('.preview-size').textContent = (file.size/1024).toFixed(0)+' KB';
+  prev.classList.add('show');
+}
+function removeFile(previewId) {
+  document.getElementById(previewId).classList.remove('show');
+}
+
+// ── Character slots ──
+const chars = [
+  { name:'Peter', emoji:'🍺' },
+  { name:'Patrick', emoji:'🐢' },
+  { name:'Brian', emoji:'🤖' },
+];
+function buildCharGrid() {
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = '';
+  chars.forEach((c,i) => {
+    const slot = document.createElement('div');
+    slot.className = 'asset-slot';
+    slot.innerHTML = `
+      <input type="file" accept="image/*" onchange="loadCharImg(this,${i})">
+      <div class="slot-plus">${c.emoji}</div>
+      <div class="slot-label">${c.name}</div>
+      <div class="slot-overlay has-img" style="color:#fff;font-size:11px;font-weight:600;">Replace</div>
+    `;
+    grid.appendChild(slot);
+  });
+}
+function loadCharImg(input, idx) {
+  const file = input.files[0];
+  if (!file) return;
+  const slot = input.parentElement;
+  const url = URL.createObjectURL(file);
+  let img = slot.querySelector('img');
+  if (!img) { img = document.createElement('img'); slot.prepend(img); }
+  img.src = url;
+  let nameEl = slot.querySelector('.slot-name');
+  if (!nameEl) { nameEl = document.createElement('div'); nameEl.className = 'slot-name'; slot.appendChild(nameEl); }
+  nameEl.textContent = chars[idx].name;
+  slot.querySelector('.slot-plus').style.display = 'none';
+  // sync emoji/name in customize screen
+  const eEl = document.getElementById('char-emoji-'+idx);
+  const nEl = document.getElementById('char-name-'+idx);
+  if (eEl) eEl.textContent = '🖼';
+  if (nEl) nEl.textContent = chars[idx].name;
+}
+function addCharSlot() {
+  const name = prompt('Character name:');
+  if (!name) return;
+  chars.push({ name, emoji:'🎭' });
+  buildCharGrid();
+  // add to customize voice row
+  const vRow = document.getElementById('voice-row');
+  const chip = document.createElement('div');
+  chip.className = 'voice-chip';
+  chip.onclick = function(){ selectVoice(this); };
+  chip.innerHTML = `<div class="voice-emoji">🎭</div><div class="voice-name">${name}</div>`;
+  vRow.appendChild(chip);
+}
+
+// ── Footage slots ──
+const footageSlots = [
+  { name:'Minecraft Parkour', emoji:'⛏️', bg:'#1a1a2e' },
+  { name:'Subway Surfers', emoji:'🏃', bg:'#1a2e1a' },
+  { name:'ASMR Soap', emoji:'🧼', bg:'#2e1a2e' },
+];
+let selectedFootage = 0;
+function buildFootageGrid() {
+  const grid = document.getElementById('footage-grid');
+  grid.innerHTML = '';
+  footageSlots.forEach((f,i) => {
+    const slot = document.createElement('div');
+    slot.className = 'footage-slot';
+    slot.setAttribute('data-idx', i);
+    slot.onclick = (e) => { if (e.target.tagName !== 'INPUT') selectFootage(i); };
+    slot.innerHTML = `
+      <input type="file" accept="video/mp4,video/*" onchange="loadFootageVideo(this,${i})">
+      <div class="slot-plus">${f.emoji}</div>
+      <div class="slot-label" style="font-size:12px;font-weight:500;">${f.name}</div>
+      ${i===0?'<div class="footage-selected-badge">Selected</div>':''}
+    `;
+    slot.style.background = f.bg+'33';
+    grid.appendChild(slot);
+  });
+}
+function loadFootageVideo(input, idx) {
+  const file = input.files[0];
+  if (!file) return;
+  const slot = input.parentElement;
+  const url = URL.createObjectURL(file);
+  let vid = slot.querySelector('video');
+  if (!vid) {
+    vid = document.createElement('video');
+    vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
+    slot.prepend(vid);
+  }
+  vid.src = url;
+  footageSlots[idx].name = file.name.replace(/\.[^.]+$/,'');
+  let nameEl = slot.querySelector('.slot-name');
+  if (!nameEl) { nameEl = document.createElement('div'); nameEl.className = 'slot-name'; slot.appendChild(nameEl); }
+  nameEl.textContent = footageSlots[idx].name;
+  slot.querySelector('.slot-plus').style.display = 'none';
+  slot.querySelector('.slot-label') && (slot.querySelector('.slot-label').style.display='none');
+  // update bg-custom chip on customize screen
+  updateCustomBgChip();
+}
+function selectFootage(i) {
+  selectedFootage = i;
+  document.querySelectorAll('#footage-grid .footage-slot').forEach((s,j) => {
+    let badge = s.querySelector('.footage-selected-badge');
+    if (j===i) {
+      if (!badge) { badge = document.createElement('div'); badge.className='footage-selected-badge'; badge.textContent='Selected'; s.appendChild(badge); }
+    } else {
+      badge && badge.remove();
+    }
+  });
+  updateCustomBgChip();
+}
+function updateCustomBgChip() {
+  const chip = document.getElementById('bg-custom');
+  const lbl = document.getElementById('bg-custom-label');
+  if (footageSlots[selectedFootage]) {
+    chip.style.display = '';
+    lbl.textContent = footageSlots[selectedFootage].name.slice(0,10);
+  }
+}
+function addFootageSlot() {
+  footageSlots.push({ name:'Custom clip '+(footageSlots.length+1), emoji:'🎬', bg:'#2e2e1a' });
+  buildFootageGrid();
+}
+
+// ── Selector helpers ──
+function selectVoice(el) {
+  document.querySelectorAll('.voice-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectBg(el) {
+  document.querySelectorAll('.bg-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selectCaption(el) {
+  document.querySelectorAll('[data-style]').forEach(c => c.style.borderColor='transparent');
+  el.style.borderColor='var(--purple)';
+}
+function selectLen(el) {
+  document.querySelectorAll('[onclick="selectLen(this)"]').forEach(c => {
+    c.style.borderColor='var(--border)'; c.style.background=''; c.style.fontWeight='500';
+  });
+  el.style.borderColor='var(--purple)';
+  el.style.background='var(--purple-light)';
+  el.style.fontWeight='600';
+}
+
+// ── Init ──
+buildCharGrid();
+buildFootageGrid();
+</script>
+</body>
+</html>
